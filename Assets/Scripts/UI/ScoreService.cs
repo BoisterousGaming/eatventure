@@ -1,16 +1,14 @@
+using TMPro;
 using UnityEngine;
 
-public class ScoreService : MonoBehaviour
+public class ScoreService : MonoBehaviour, IScoreService
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    [SerializeField] TextMeshProUGUI scoreText;
+    public int Coins { get; private set; }
 
-    // Update is called once per frame
-    void Update()
+    public void Add(int amount)
     {
-        
+        Coins += amount;
+        if (scoreText) scoreText.text = $"$ {Coins}";
     }
 }

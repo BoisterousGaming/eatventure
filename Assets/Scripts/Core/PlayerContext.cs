@@ -2,15 +2,15 @@ using UnityEngine;
 
 public class PlayerContext : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    public IInventory Inventory { get; private set; }
+    public IScoreService Score { get; private set; }
+    public ICurrencyFX CurrencyFX { get; private set; }
+    public RectTransform ScoreTarget;
 
-    // Update is called once per frame
-    void Update()
+    void Awake()
     {
-        
+        Inventory = GetComponent<IInventory>();
+        Score = FindFirstObjectByType<ScoreService>();
+        CurrencyFX = FindFirstObjectByType<CurrencyFlyFX>();
     }
 }

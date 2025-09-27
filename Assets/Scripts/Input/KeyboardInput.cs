@@ -1,16 +1,11 @@
 using UnityEngine;
 
-public class KeyboardInput : MonoBehaviour
+public class KeyboardInput : MonoBehaviour, IPlayerInput
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    public Vector2 Move => new Vector2(
+        Input.GetAxisRaw("Horizontal"),
+        Input.GetAxisRaw("Vertical")
+    ).normalized;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public bool InteractDown => Input.GetKeyDown(KeyCode.E);
 }
