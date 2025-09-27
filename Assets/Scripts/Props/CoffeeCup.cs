@@ -5,33 +5,51 @@ public class CoffeeCup : MonoBehaviour, IPoolable
 {
     Rigidbody _rb;
     Transform _defaultParent;
+    Vector3 _initialLocalScale;
 
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _defaultParent = transform.parent;
+        _initialLocalScale = transform.localScale;
     }
 
     public void SetCarried(bool on, Transform parent)
     {
-        transform.SetParent(on ? parent : _defaultParent);
-        if (_rb) _rb.isKinematic = on;
-        if (on) transform.localRotation = Quaternion.identity;
+        if (on)
+        {
+            transform.SetParent(parent, false);
+            transform.localScale = _initialLocalScale;
+            transform.localRotation = Quaternion.identity;
+            if (_rb) _rb.isKinematic = true;
+        }
+        else
+        {
+            transform.SetParent(_defaultParent, false);
+            transform.localScale = _initialLocalScale;
+            if (_rb) _rb.isKinematic = false;
+        }
     }
 
     public void OnSpawnFromPool()
     {
-        _rb.linearVelocity = Vector3.zero;
-        _rb.angularVelocity = Vector3.zero;
-        transform.localScale = Vector3.one;
-        transform.rotation = Quaternion.identity;
-        transform.SetParent(_defaultParent);
+        if (_rb)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
+        }
+        transform.localScale = _initialLocalScale;
+        transform.localRotation = Quaternion.identity;
+        transform.SetParent(_defaultParent, false);
     }
 
     public void OnReturnToPool()
     {
-        SetCarried(false, _defaultParent);
+        transform.SetParent(_defaultParent, false);
+        transform.localScale = _initialLocalScale;
         transform.localPosition = Vector3.zero;
-        transform.rotation = Quaternion.identity;
+        transform.localRotation = Quaternion.identity;
+        if (_rb)
+            _rb.linearVelocity = Vector3.zero; _rb.angularVelocity = Vector3.zero;
     }
 }

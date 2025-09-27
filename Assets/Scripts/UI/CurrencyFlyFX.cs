@@ -23,13 +23,10 @@ public class CurrencyFlyFX : MonoBehaviour, ICurrencyFX
         var cam = Camera.main;
         if (!cam) yield break;
 
-        // GET from pool
         UICoin coin = _pool.Get(coinPrefab);
         var rt = coin.GetComponent<RectTransform>();
-        rt.SetParent(canvasRect, worldPositionStays: false);
-
-        Vector3 screen = cam.WorldToScreenPoint(worldPos);
-        rt.position = screen;
+        rt.SetParent(canvasRect, false);
+        rt.position = cam.WorldToScreenPoint(worldPos);
 
         float t = 0f;
         Vector3 from = rt.position, to = target.position;
