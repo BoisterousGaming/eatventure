@@ -2,15 +2,27 @@ using UnityEngine;
 
 public class Interactor : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField] float radius = 1.2f;
+    IPlayerInput _input;
+    PlayerContext _ctx;
+
+    void Awake()
     {
-        
+        _input = GetComponent<IPlayerInput>();
+        _ctx = GetComponent<PlayerContext>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
+        if (_input == null || !_input.InteractDown) return;
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, radius);
+        foreach (var h in hits)
+        {
+            if (h.TryGetComponent<IInteractable>(out var target))
+            {
+                if (target.TryInteract(_ctx)) break;
+            }
+        }
     }
 }
