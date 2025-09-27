@@ -1,16 +1,19 @@
 using UnityEngine;
 
-public class Pooling : MonoBehaviour
+public interface IPoolable
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    void OnSpawnFromPool();
+    void OnReturnToPool();
+}
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+public interface IObjectPool<T> where T : Component
+{
+    T Get();
+    void Release(T instance);
+}
+
+public interface IPoolService
+{
+    T Get<T>(T prefab) where T : Component;
+    void Release<T>(T instance) where T : Component;
 }

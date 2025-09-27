@@ -1,16 +1,62 @@
 using UnityEngine;
 
-public class Interfaces : MonoBehaviour
+public interface IPlayerInput
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    Vector2 Move { get; }
+    bool InteractDown { get; }
+}
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+public interface IPlayerMover
+{
+    float Speed { get; set; }
+    void Move(Vector3 worldDir);
+    void Face(Vector3 worldDir);
+}
+
+public interface IInventory
+{
+    bool CanAddBean { get; }
+    bool PushBean(BeanBag b);
+    bool PopBean(out BeanBag b);
+    bool HasCup { get; }
+    bool PushCup(CoffeeCup c);
+    bool PopCup(out CoffeeCup c);
+}
+
+public interface IInteractable
+{
+    bool TryInteract(PlayerContext ctx);
+}
+
+public interface IResourceProvider
+{
+    BeanBag CreateBean(Vector3 hintPos);
+}
+
+public interface ICoffeeProcessor
+{
+    bool CanInsertBean { get; }
+    void InsertBean();
+    bool TryTakeCup(out CoffeeCup cup);
+}
+
+public interface IScoreService
+{
+    int Coins { get; }
+    void Add(int amount);
+}
+
+public interface ICurrencyFX
+{
+    void FlyFromWorld(Vector3 worldPos, int amount, RectTransform target);
+}
+
+public interface ICustomerLifecycle
+{
+    void Served();
+}
+
+public interface ICustomerFactory
+{
+    CustomerInteractable Spawn();
 }
