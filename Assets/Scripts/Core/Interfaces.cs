@@ -78,3 +78,13 @@ public interface IPoolService
     T Get<T>(T prefab) where T : Component;
     void Release<T>(T instance) where T : Component;
 }
+
+public interface IWeightedInteractable : IInteractable
+{
+    int GetPriority(PlayerContext ctx);
+}
+
+public interface IBeanReadable
+{
+    int BeanCount { get; }
+}

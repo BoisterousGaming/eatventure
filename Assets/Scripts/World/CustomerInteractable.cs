@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-public class CustomerInteractable : MonoBehaviour, IInteractable, ICustomerLifecycle, IPoolable
+public class CustomerInteractable : MonoBehaviour, IWeightedInteractable, ICustomerLifecycle, IPoolable
 {
     [SerializeField] int reward = 5;
 
@@ -9,6 +9,11 @@ public class CustomerInteractable : MonoBehaviour, IInteractable, ICustomerLifec
     IPoolService _pool;
 
     void Awake() => _pool = FindFirstObjectByType<PoolService>();
+
+    public int GetPriority(PlayerContext ctx)
+    {
+        return ctx != null && ctx.Inventory.HasCup ? 90 : 0;
+    }
 
     public bool TryInteract(PlayerContext ctx)
     {

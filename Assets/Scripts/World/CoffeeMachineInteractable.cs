@@ -1,33 +1,44 @@
 using System.Collections;
 using UnityEngine;
 
-public class CoffeeMachineInteractable : MonoBehaviour, IInteractable, ICoffeeProcessor
+public class CoffeeMachineInteractable : MonoBehaviour, IWeightedInteractable, ICoffeeProcessor
 {
     [SerializeField] Transform counterPoint;
     [SerializeField] float processSeconds = 2f;
     [SerializeField] CoffeeCup cupPrefab;
+
+    public bool IsProcessing { get; private set; }
+    public float Progress01 { get; private set; }
+    public bool CanInsertBean => !_processing;
 
     bool _processing;
     IPoolService _pool;
 
     void Awake() => _pool = FindFirstObjectByType<PoolService>();
 
-    public bool CanInsertBean => !_processing;
+    public int GetPriority(PlayerContext ctx)
+    {
+        if (TryTakeCup(out _) && !ctx.Inventory.HasCup) return 100;
+
+        var invRead = ctx.Inventory as IBeanReadable;
+        if (!_processing && invRead != null && invRead.BeanCount > 0) return 80;
+
+        return 0;
+    }
 
     public bool TryInteract(PlayerContext ctx)
     {
         if (ctx == null || _pool == null) return false;
 
-        if (CanInsertBean && ctx.Inventory.PopBean(out var bean))
+        if (TryTakeCup(out var cup) && !ctx.Inventory.HasCup)
+            return ctx.Inventory.PushCup(cup);
+
+        var invRead = ctx.Inventory as IBeanReadable;
+        if (!_processing && invRead != null && invRead.BeanCount > 0 && ctx.Inventory.PopBean(out var bean))
         {
             _pool.Release(bean);
             InsertBean();
             return true;
-        }
-
-        if (!_processing && TryTakeCup(out var cup))
-        {
-            return ctx.Inventory.PushCup(cup);
         }
 
         return false;
@@ -42,12 +53,23 @@ public class CoffeeMachineInteractable : MonoBehaviour, IInteractable, ICoffeePr
     IEnumerator ProcessOneCup()
     {
         _processing = true;
-        yield return new WaitForSeconds(processSeconds);
+        IsProcessing = true;
+        Progress01 = 0f;
+
+        float t = 0f;
+        while (t < processSeconds)
+        {
+            t += Time.deltaTime;
+            Progress01 = Mathf.Clamp01(t / processSeconds);
+            yield return null;
+        }
 
         var cup = _pool.Get(cupPrefab);
         cup.transform.SetPositionAndRotation(counterPoint.position, counterPoint.rotation);
 
         _processing = false;
+        IsProcessing = false;
+        Progress01 = 0f;
     }
 
     public bool TryTakeCup(out CoffeeCup cup)

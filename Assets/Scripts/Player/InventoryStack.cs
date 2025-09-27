@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class InventoryStack : MonoBehaviour, IInventory
+public class InventoryStack : MonoBehaviour, IInventory, IBeanReadable
 {
     [SerializeField] int maxBeans = 3;
     [SerializeField] Transform backAnchor;
@@ -11,6 +11,7 @@ public class InventoryStack : MonoBehaviour, IInventory
     CoffeeCup _cup;
 
     public bool CanAddBean => _beans.Count < maxBeans;
+    public int BeanCount => _beans.Count;
 
     public bool PushBean(BeanBag b)
     {

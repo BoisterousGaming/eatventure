@@ -1,12 +1,17 @@
 using UnityEngine;
 
-public class ResourceAreaInteractable : MonoBehaviour, IInteractable, IResourceProvider
+public class ResourceAreaInteractable : MonoBehaviour, IWeightedInteractable, IResourceProvider
 {
     [SerializeField] BeanBag beanPrefab;
 
     IPoolService _pool;
 
     void Awake() => _pool = FindFirstObjectByType<PoolService>();
+
+    public int GetPriority(PlayerContext ctx)
+    {
+        return (ctx != null && ctx.Inventory.CanAddBean) ? 50 : 0;
+    }
 
     public bool TryInteract(PlayerContext ctx)
     {
