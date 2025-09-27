@@ -88,3 +88,8 @@ public interface IBeanReadable
 {
     int BeanCount { get; }
 }
+
+public interface IPositionLimiter
+{
+    Vector3 Clamp(Vector3 worldPos);
+}

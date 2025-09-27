@@ -1,9 +1,13 @@
 using UnityEngine;
+using System.Collections;
 
 public class CustomerSpawner : MonoBehaviour, ICustomerFactory
 {
+    [Header("Spawn Settings")]
     [SerializeField] Transform spawnPoint;
     [SerializeField] CustomerInteractable customerPrefab;
+    [SerializeField] float minDelay = 1.5f;
+    [SerializeField] float maxDelay = 2f;
 
     IPoolService _pool;
     CustomerInteractable _current;
@@ -15,14 +19,16 @@ public class CustomerSpawner : MonoBehaviour, ICustomerFactory
     {
         var c = _pool.Get(customerPrefab);
         c.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-        c.OnServed = () =>
-        {
-            _current = null;
-            Spawn();
-        };
-
+        c.OnServed = () => StartCoroutine(SpawnNextWithDelay());
         _current = c;
         return c;
+    }
+
+    IEnumerator SpawnNextWithDelay()
+    {
+        float wait = Random.Range(minDelay, maxDelay);
+        yield return new WaitForSeconds(wait);
+        Spawn();
     }
 
     void OnDisable()
