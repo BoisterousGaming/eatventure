@@ -1,19 +1,19 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PoolService : MonoBehaviour, IPoolService
 {
-    [System.Serializable]
-    class PoolConfig
+    [Serializable]
+    public class Prewarm
     {
-        public Component prefab;
-        public int prewarm = 0;
+        public GameObject prefab;
+        public int count = 0;
     }
 
-    [SerializeField] List<PoolConfig> prewarmConfigs = new();
+    [SerializeField] List<Prewarm> prewarm = new();
 
-    readonly Dictionary<Component, Queue<Component>> _pools = new();
-    readonly Dictionary<Component, Component> _instanceToPrefab = new();
+    readonly Dictionary<GameObject, Queue<GameObject>> _pools = new();
 
     Transform _root;
 
@@ -22,70 +22,87 @@ public class PoolService : MonoBehaviour, IPoolService
         _root = new GameObject("PoolRoot").transform;
         _root.SetParent(transform, false);
 
-        foreach (var cfg in prewarmConfigs)
+        foreach (var p in prewarm)
         {
-            if (cfg.prefab == null || cfg.prewarm <= 0) continue;
-            if (!_pools.TryGetValue(cfg.prefab, out var q))
-                _pools[cfg.prefab] = q = new Queue<Component>();
+            if (!p.prefab || p.count <= 0) continue;
+            if (!_pools.TryGetValue(p.prefab, out var q))
+                _pools[p.prefab] = q = new Queue<GameObject>();
 
-            for (int i = 0; i < cfg.prewarm; i++)
+            for (int i = 0; i < p.count; i++)
             {
-                var inst = Instantiate(cfg.prefab, _root);
-                RegisterInstance(inst, cfg.prefab);
+                var inst = CreateInstance(p.prefab);
                 SetActive(inst, false);
                 q.Enqueue(inst);
             }
         }
     }
 
-    public T Get<T>(T prefab) where T : Component
+    public T Get<T>(T prefabComponent) where T : Component
     {
-        if (prefab == null)
+        if (prefabComponent == null)
         {
             Debug.LogError("PoolService: Null prefab requested");
             return null;
         }
 
-        if (!_pools.TryGetValue(prefab, out var q))
-            _pools[prefab] = q = new Queue<Component>();
+        GameObject key = prefabComponent.gameObject;
+        GameObject instanceGO = DequeueOrCreate(key);
+        SetActive(instanceGO, true);
 
-        T inst;
-        if (q.Count > 0)
-        {
-            inst = (T)q.Dequeue();
-        }
-        else
-        {
-            inst = Instantiate(prefab, _root) as T;
-            RegisterInstance(inst, prefab);
-        }
+        foreach (var p in instanceGO.GetComponentsInChildren<IPoolable>(true))
+            p.OnSpawnFromPool();
 
-        SetActive(inst, true);
-        (inst as IPoolable)?.OnSpawnFromPool();
-        return inst;
+        var comp = instanceGO.GetComponentInChildren<T>(true);
+        if (comp == null)
+            Debug.LogError($"PoolService: Instance missing component {typeof(T).Name} on {key.name}");
+
+        return comp;
     }
 
-    public void Release<T>(T instance) where T : Component
+    public void Release<T>(T instanceComponent) where T : Component
     {
-        if (instance == null) return;
+        if (instanceComponent == null) return;
 
-        if (!_instanceToPrefab.TryGetValue(instance, out var prefab))
+        var id = instanceComponent.GetComponentInParent<PoolIdentity>();
+        if (id == null || id.prefabKey == null)
         {
-            Debug.LogWarning($"PoolService: Instance {instance.name} not registered; destroying to avoid leak.");
-            Destroy(instance.gameObject);
+            Debug.LogWarning($"PoolService: {instanceComponent.name} has no PoolIdentity; destroying to avoid leak.");
+            Destroy(instanceComponent.gameObject);
             return;
         }
 
-        (instance as IPoolable)?.OnReturnToPool();
-        instance.transform.SetParent(_root, false);
-        SetActive(instance, false);
-        _pools[prefab].Enqueue(instance);
+        GameObject go = id.gameObject;
+        foreach (var p in go.GetComponentsInChildren<IPoolable>(true))
+            p.OnReturnToPool();
+
+        go.transform.SetParent(_root, false);
+        SetActive(go, false);
+
+        if (!_pools.TryGetValue(id.prefabKey, out var q))
+            _pools[id.prefabKey] = q = new Queue<GameObject>();
+
+        q.Enqueue(go);
     }
 
-    void RegisterInstance(Component inst, Component prefab)
+    GameObject DequeueOrCreate(GameObject key)
     {
-        _instanceToPrefab[inst] = prefab;
+        if (!_pools.TryGetValue(key, out var q))
+            _pools[key] = q = new Queue<GameObject>();
+
+        if (q.Count > 0)
+            return q.Dequeue();
+
+        return CreateInstance(key);
     }
 
-    static void SetActive(Component c, bool state) => c.gameObject.SetActive(state);
+    GameObject CreateInstance(GameObject key)
+    {
+        var go = Instantiate(key, _root);
+        var id = go.GetComponent<PoolIdentity>();
+        if (id == null) id = go.AddComponent<PoolIdentity>();
+        id.prefabKey = key;
+        return go;
+    }
+
+    static void SetActive(GameObject go, bool state) => go.SetActive(state);
 }
